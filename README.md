@@ -18,7 +18,9 @@ file <- glue::glue('{finess}.{annee}.{mois}.valo.txt',
                    annee = 2018,
                    mois = 12)
 
-# Importer la table (1000 premières lignes ici)
+# Importer la table (1000 premières lignes ici), 
+# La fonction import_v utilise le nom du fichier pour savoir quel format appliquer, 
+# ici valo correspond à la sortie VisualValoSej.
 import_v(
   path = '~/Documents/data/vvs',
   file =  file,
