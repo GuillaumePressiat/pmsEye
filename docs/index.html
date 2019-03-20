@@ -61,6 +61,32 @@
 <div class="page-header"><h1 class="hasAnchor">
 <a href="#pmseye" class="anchor"></a>pmsEye</h1></div>
 <p>Import des sorties des logiciels Visual* de l’ATIH</p>
+<div id="exemples" class="section level2">
+<h2 class="hasAnchor">
+<a href="#exemples" class="anchor"></a>Exemples</h2>
+<div class="sourceCode"><pre class="sourceCode r"><code class="sourceCode r"><span class="kw">library</span>(pmsEye)
+
+<span class="co"># Obtenir le dictionnaire des colonnes</span>
+<span class="kw">View</span>(<span class="kw"><a href="reference/dico_v.html">dico_v</a></span>(<span class="dv">2018</span>, <span class="st">'valo'</span>))
+
+
+file &lt;-<span class="st"> </span>glue<span class="op">::</span><span class="kw"><a href="http://www.rdocumentation.org/packages/glue/topics/glue">glue</a></span>(<span class="st">'{finess}.{annee}.{mois}.valo.txt'</span>,
+                   <span class="dt">finess =</span> <span class="st">'750712184'</span>,
+                   <span class="dt">annee =</span> <span class="dv">2018</span>,
+                   <span class="dt">mois =</span> <span class="dv">12</span>)
+
+<span class="co"># Importer la table (1000 premières lignes ici), </span>
+<span class="co"># La fonction import_v utilise le nom du fichier pour savoir quel format appliquer, </span>
+<span class="co"># ici valo correspond à la sortie VisualValoSej.</span>
+<span class="kw"><a href="reference/import_v.html">import_v</a></span>(
+  <span class="dt">path =</span> <span class="st">'~/Documents/data/vvs'</span>,
+  <span class="dt">file =</span>  file,
+  <span class="dt">n_max =</span> <span class="fl">1e3</span>
+)
+
+<span class="co"># ouvrir le manuel technique Visual* de l'ATIH</span>
+<span class="kw"><a href="reference/ouvrir_pdf_v.html">ouvrir_pdf_v</a></span>(<span class="dv">2018</span>, <span class="st">'valo'</span>)</code></pre></div>
+</div>
 </div>
   </div>
 
