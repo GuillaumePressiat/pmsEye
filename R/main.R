@@ -16,7 +16,7 @@
 #' @export
 format_v <- function(path, file){
   
-  passe_file <- stringr::str_match_all(file, "([0-9]{9})\\.(20[0-9]{2})\\.([0-9]+)\\.(.*)\\.txt") %>% 
+  passe_file <- stringr::str_match_all(file, "([0-9]{9})\\.(20[0-9]{2})\\.([0-9]+)\\.(.*)\\.(txt|csv)") %>% 
     unlist
   
   annee = passe_file[3]
@@ -25,6 +25,7 @@ format_v <- function(path, file){
   if (!file.exists(path.package('pmsEye') %+% '/formats/' %+% type_v %+% '/' %+% annee %+% '.xlsx')){
     stop("Format non supporté pour l'instant")
   }
+  
   #format <- readxl::read_excel('inst/formats/' %+% type_v %+% '/' %+% annee %+% '.xlsx') %>%
   format <- readxl::read_excel(path.package('pmsEye') %+% '/formats/' %+% type_v %+% '/' %+% annee %+% '.xlsx') %>%
     dplyr::mutate(type = dplyr::case_when(grepl('date_', Variable) ~ 'D',
@@ -65,6 +66,9 @@ format_v <- function(path, file){
   if (type_v != "valo_ssr"){
     delim = ifelse(annee < "17", ";", "\t")
   }
+  if (type_v == "valo_ssr"){
+    delim = ";"
+  }
   return(list(table_formats = format, at = at, an = an, delim = delim, type_v = type_v))
 }
 
@@ -83,15 +87,68 @@ format_v <- function(path, file){
 #' @export
 import_v <- function(path, file, tolower_names = TRUE, ...) {
   
+  # importer le format pris dans le pdf
   format = format_v(path, file)
+  
+  # observer les entêtes du fichier à lire
+  entetes_reelles <- readr::read_lines(file.path(path, file), n_max = 1) %>% 
+    stringr::str_split(format$delim) %>% 
+    unlist() %>% 
+    tolower
+  
+  nbl_nok = length(format$an) != length(entetes_reelles)
+  col_not_id = !identical(tolower(format$an), entetes_reelles)
+  
+  # si le nb col est différent, on changera de stratégie (2)
+  if (nbl_nok){
+    warning('
+Le nombre de colonnes ne correspond pas au format indiqué dans le pdf de specs utilisé dans ce package.
+On lit le fichier tel quel avec ses entêtes')
+  }
+  
+  # on avertie de différences mineures entre les noms de colonnes (cas observés éventuellement)
+  if (col_not_id & !nbl_nok){
+    
+    noks <- which(entetes_reelles != tolower(format$an))
+    warning('
+Le fichier contient des entêtes ne correspondant pas au format indiqué 
+dans le pdf de specs utilisé dans ce package :\n' %+%
+              ('-- Colonne ' % % noks % % ':' % % entetes_reelles[noks] %,% ' au lieu de :' % % 
+              tolower(format$an)[noks] %c% '\n'))
+    
+  }
+  
+  # Stratégie (2) en pratique : on lit le fichier et on formate en se basant sur les noms de colonnes
+  if (nbl_nok || col_not_id){
+    v <- readr::read_delim(file.path(path, file), delim = format$delim, 
+                           col_types = readr::cols(.default = readr::col_character()), na = c('.'), ...) %>% 
+      stringfix::tolower_names() %>% 
+      dplyr::mutate_at(vars(starts_with('date')), lubridate::dmy) %>%
+      dplyr::mutate_at(vars(starts_with('mnt')), as.numeric) %>% 
+      dplyr::mutate_at(vars(starts_with('coef')), as.numeric) %>% 
+      dplyr::mutate_at(vars(starts_with('coef')), as.numeric) %>% 
+      dplyr::mutate_at(vars(starts_with('supp')), as.integer) %>% 
+      dplyr::mutate_at(vars(starts_with('nb')), as.integer)
+  }
+  
+  # Stratégie (1) idéale : les colonnes correspondent au pdf de specs, on utilise les formats inscrits dans le package.
+  if (!col_not_id){
   v <- readr::read_delim(file.path(path, file), delim = format$delim, 
-                         col_types = format$at, col_names = format$an, skip = 1, na = c('.'), ...)
+                         col_types = format$at, col_names = format$an, skip = 1, na = c('.'), ...) 
+  }
+  
+  v <- dplyr::mutate_if(v, is.character, stringr::str_trim)
 
   
-  if (tolower_names == TRUE){
-   return(tolower_names(v))
+  if (format$type_v == "valo_ssr"){
+    # Enlever les quotes dans la colonne GME (fait pour excel ?)
+    v <- dplyr::mutate(v, GME = stringr::str_remove(GME, "'"))
   }
-  return(toupper_names(v))
+  
+  if (tolower_names == TRUE){
+   return(stringfix::tolower_names(v))
+  }
+  return(stringfix::toupper_names(v))
 }
 
 
