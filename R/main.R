@@ -23,7 +23,8 @@ format_v <- function(path, file){
   type_v = passe_file[5]
   
   if (!file.exists(path.package('pmsEye') %+% '/formats/' %+% type_v %+% '/' %+% annee %+% '.xlsx')){
-    stop("Format non supporté pour l'instant")
+    stop("Format non intégré pour l'instant dans le package")
+    return(NULL)
   }
   
   #format <- readxl::read_excel('inst/formats/' %+% type_v %+% '/' %+% annee %+% '.xlsx') %>%
@@ -38,7 +39,7 @@ format_v <- function(path, file){
   vec <- format$type
   col_types <-  vec
   is_character <- vapply(col_types, is.character, logical(1))
-  col_concise <- function(x) {
+  col_concise <- function(x){
     switch(x,
            "_" = ,
            "-" = readr::col_skip(),
